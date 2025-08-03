@@ -37,7 +37,7 @@ class syntax_plugin_explain extends DokuWiki_Syntax_Plugin {
         return 239; // before 'acronym'
     }
 
-    function syntax_plugin_explain() {
+    function __construct() {
         // "static" not allowed in PHP4?!?
         //if (isset($keys[0]) return; // evaluate at most once
         $lines = @file(DOKU_CONF.'explain.conf');
@@ -50,7 +50,7 @@ class syntax_plugin_explain extends DokuWiki_Syntax_Plugin {
             if (empty($line)) continue;
             if (substr($line, 0, 1) === '#') continue;
             $parts = explode("\t", $line);
-            if ($i) $parts[0] = utf8_strtolower($parts[0]);
+            if ($i) $parts[0] = \dokuwiki\Utf8\PhpString::strtolower($parts[0]);
             $this->map[$parts[0]] = array('desc'   => $parts[1],
                     'target' => $this->link(array_slice($parts, 2)),
                     'i'      => $i);
@@ -76,7 +76,9 @@ class syntax_plugin_explain extends DokuWiki_Syntax_Plugin {
             return $target;
 
         /* Match an internal link. */
-        list($id, $hash) = explode('#', $target, 2);
+        $parts = explode('#', $target, 2);
+        $id = $parts[0];
+        $hash = isset($parts[1]) ? $parts[1] : '';
         global $ID;
 
         $_ret = '';
@@ -105,7 +107,7 @@ class syntax_plugin_explain extends DokuWiki_Syntax_Plugin {
         $data = array('content' => $match);
         foreach (array_keys($this->map) as $rxmatch) {
             if ($match === $rxmatch ||
-                    ($this->map[$rxmatch]['i'] && strtolower($match) === $rxmatch)) {
+                    ($this->map[$rxmatch]['i'] && \dokuwiki\Utf8\PhpString::strtolower($match) === $rxmatch)) {
                 $data += $this->map[$rxmatch];
                 /* Handle only the first occurrence. */
                 unset($this->map[$rxmatch]['desc']);
@@ -116,7 +118,7 @@ class syntax_plugin_explain extends DokuWiki_Syntax_Plugin {
     }
 
     public function render($format, Doku_Renderer $renderer, $data) {
-        if(is_null($data['desc'])) {
+        if(empty($data['desc'])) {
             $renderer->doc .= hsc($data['content']);
             return true;
         }
